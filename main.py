@@ -32,7 +32,6 @@ def image_to_ascii(
     
     try:
         img = Image.open(image_path).convert('L')
-        img.close()
     except Exception as e:
         raise ValueError(f"Ошибка при открытии изображения: {e}")
     
@@ -52,7 +51,7 @@ def image_to_ascii(
         "".join(charset[pixel] for pixel in row)
         for row in pixels
     )
-    
+    img.close()
     return ascii_art
 
 if __name__ == "__main__":

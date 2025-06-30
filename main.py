@@ -31,26 +31,40 @@ def image_to_ascii(
         raise ValueError("Контрастность и яркость должны быть положительными числами.")
     
     try:
+        # Конвертирует изображение в оттенки серого ('L' - luminance)
         img = Image.open(image_path).convert('L')
     except Exception as e:
         raise ValueError(f"Ошибка при открытии изображения: {e}")
     
     width, height = img.size
+    # Рассчитывает высоту ASCII-арта с учетом пропорций изображения и соотношения высоты/ширины символов
     aspect_ratio = height / width
-    CHAR_HEIGHT_TO_WIDTH_RATIO = 0.55
+    CHAR_HEIGHT_TO_WIDTH_RATIO = 0.55  # Эмпирическое соотношение высоты/ширины символа в консоли
     output_height = int(output_width * aspect_ratio * CHAR_HEIGHT_TO_WIDTH_RATIO)
     
+    # Изменяет размер изображения до нужных размеров ASCII-арта
     img = img.resize((output_width, output_height))
+    
+    # Преобразует изображение в numpy массив для обработки
     pixels = np.array(img)
     
+    # Применяет контраст и яркость:
+    # 1. Сначала центрирует значения вокруг 128 (вычитает 128)
+    # 2. Умножает на коэффициент контраста (растягивает/сжимает диапазон)
+    # 3. Добавляет 128 * brightness (сдвигает среднюю яркость)
+    # 4. Ограничивает значения в диапазоне 0-255 с помощью np.clip
     pixels = np.clip((pixels - 128) * contrast + 128 * brightness, 0, 255)
     
+    # Нормализует значения пикселей к индексам charset (от 0 до len(charset) - 1)
     pixels = (pixels / 255 * (len(charset) - 1)).astype(int)
     
+    # Собирает ASCII-арт: ля каждого пикселя выбирает соответствующий символ из charset
+    # и объединяет строки через символ новой строки
     ascii_art = "\n".join(
         "".join(charset[pixel] for pixel in row)
         for row in pixels
     )
+    
     img.close()
     return ascii_art
 
@@ -63,6 +77,7 @@ if __name__ == "__main__":
         if custom_settings not in (0, 1):
             raise ValueError('Введите 0 или 1.')
         
+        # Запрашивает у пользователя настройки, если выбран режим кастомизации
         if custom_settings == 1:
             settings['output_width'] = int(input('Введите ширину ASCII-арта (например, 100): '))
             settings['charset'] = input('Введите кодировку от темного к светлому (например, @%#*+=-:. )')
@@ -73,6 +88,7 @@ if __name__ == "__main__":
         ascii_art = image_to_ascii(image_path, **settings)
         print(ascii_art)
     except KeyboardInterrupt:
+        # Ловит аварийную ошибку, если нажать Ctrl + C
         print("\nПрограмма прервана пользователем.")
     except Exception as e:
         print(f"Ошибка: {e}")
